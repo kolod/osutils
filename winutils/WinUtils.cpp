@@ -1,19 +1,18 @@
-/*
- * Copyright (C) 2020 KeePassXC Team <team@keepassxc.org>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 or (at your option)
- * version 3 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (C) 2020 KeePassXC Team <team@keepassxc.org>
+// Copyright (C) 2021 Oleksandr Kolodkin <alexandr.kolodkin@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 or (at your option)
+// version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "WinUtils.h"
 
@@ -27,42 +26,45 @@
 
 QPointer<WinUtils> WinUtils::m_instance = nullptr;
 
-WinUtils* WinUtils::instance()
+WinUtils *WinUtils::instance()
 {
-    if (!m_instance) {
-        m_instance = new WinUtils(qApp);
-        m_instance->m_darkAppThemeActive = m_instance->isDarkMode();
-        m_instance->m_darkSystemThemeActive = m_instance->isStatusBarDark();
+	if (!m_instance)
+	{
+		m_instance = new WinUtils(qApp);
+		m_instance->m_darkAppThemeActive = m_instance->isDarkMode();
+		m_instance->m_darkSystemThemeActive = m_instance->isStatusBarDark();
 
 #ifdef QT_DEBUG
-        // Attach console to enable debug output
-        if (AttachConsole(ATTACH_PARENT_PROCESS)) {
-            freopen("CONOUT$", "w", stdout);
-            freopen("CONOUT$", "w", stderr);
-        }
+		// Attach console to enable debug output
+		if (AttachConsole(ATTACH_PARENT_PROCESS))
+		{
+			freopen("CONOUT$", "w", stdout);
+			freopen("CONOUT$", "w", stderr);
+		}
 #endif
-    }
+	}
 
-    return m_instance;
+	return m_instance;
 }
 
-WinUtils::WinUtils(QObject* parent)
-    : OSUtilsBase(parent)
+WinUtils::WinUtils(QObject *parent)
+	: OSUtilsBase(parent)
 {
 }
 
 bool WinUtils::canPreventScreenCapture() const
 {
-    return true;
+	return true;
 }
 
-bool WinUtils::setPreventScreenCapture(QWindow* window, bool prevent) const
+bool WinUtils::setPreventScreenCapture(QWindow *window, bool prevent) const
 {
-    if (window) {
-        HWND handle = reinterpret_cast<HWND>(window->winId());
-        return SetWindowDisplayAffinity(handle, prevent ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
-    }
-    return false;
+	if (window)
+	{
+		HWND handle = reinterpret_cast<HWND>(window->winId());
+		return SetWindowDisplayAffinity(handle, prevent ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
+	}
+	return false;
 }
 
 /**
@@ -70,145 +72,159 @@ bool WinUtils::setPreventScreenCapture(QWindow* window, bool prevent) const
  */
 void WinUtils::registerNativeEventFilter()
 {
-    qApp->installNativeEventFilter(this);
+	qApp->installNativeEventFilter(this);
 }
 
-bool WinUtils::nativeEventFilter(const QByteArray& eventType, void* message, long*)
+bool WinUtils::nativeEventFilter(const QByteArray &eventType, void *message, long *)
 {
-    if (eventType != "windows_generic_MSG") {
-        return false;
-    }
+	if (eventType != "windows_generic_MSG")
+	{
+		return false;
+	}
 
-    auto* msg = static_cast<MSG*>(message);
-    switch (msg->message) {
-    case WM_SETTINGCHANGE:
-        if (m_darkAppThemeActive != isDarkMode()) {
-            m_darkAppThemeActive = !m_darkAppThemeActive;
-            emit interfaceThemeChanged();
-        }
+	auto *msg = static_cast<MSG *>(message);
+	switch (msg->message)
+	{
+	case WM_SETTINGCHANGE:
+		if (m_darkAppThemeActive != isDarkMode())
+		{
+			m_darkAppThemeActive = !m_darkAppThemeActive;
+			emit interfaceThemeChanged();
+		}
 
-        if (m_darkSystemThemeActive != isStatusBarDark()) {
-            m_darkSystemThemeActive = !m_darkSystemThemeActive;
-            emit statusbarThemeChanged();
-        }
-        break;
-    case WM_HOTKEY:
-        triggerGlobalShortcut(msg->wParam);
-        break;
-    }
+		if (m_darkSystemThemeActive != isStatusBarDark())
+		{
+			m_darkSystemThemeActive = !m_darkSystemThemeActive;
+			emit statusbarThemeChanged();
+		}
+		break;
+	case WM_HOTKEY:
+		triggerGlobalShortcut(msg->wParam);
+		break;
+	}
 
-    return false;
+	return false;
 }
 
 bool WinUtils::isDarkMode() const
 {
-    QSettings settings(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
-                       QSettings::NativeFormat);
-    return settings.value("AppsUseLightTheme", 1).toInt() == 0;
+	QSettings settings(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
+					   QSettings::NativeFormat);
+	return settings.value("AppsUseLightTheme", 1).toInt() == 0;
 }
 
 bool WinUtils::isStatusBarDark() const
 {
-    QSettings settings(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
-                       QSettings::NativeFormat);
-    return settings.value("SystemUsesLightTheme", 0).toInt() == 0;
+	QSettings settings(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
+					   QSettings::NativeFormat);
+	return settings.value("SystemUsesLightTheme", 0).toInt() == 0;
 }
 
 bool WinUtils::isLaunchAtStartupEnabled() const
 {
-    return QSettings(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)", QSettings::NativeFormat)
-        .contains(qAppName());
+	return QSettings(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)", QSettings::NativeFormat)
+		.contains(qAppName());
 }
 
 void WinUtils::setLaunchAtStartup(bool enable)
 {
-    QSettings reg(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)", QSettings::NativeFormat);
-    if (enable) {
-        reg.setValue(qAppName(), QString("\"%1\"").arg(QDir::toNativeSeparators(QApplication::applicationFilePath())));
-    } else {
-        reg.remove(qAppName());
-    }
-}
-
-bool WinUtils::isCapslockEnabled()
-{
-    return GetKeyState(VK_CAPITAL) == 1;
+	QSettings reg(R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run)", QSettings::NativeFormat);
+	if (enable)
+	{
+		reg.setValue(qAppName(), QString("\"%1\"").arg(QDir::toNativeSeparators(QApplication::applicationFilePath())));
+	}
+	else
+	{
+		reg.remove(qAppName());
+	}
 }
 
 bool WinUtils::isHighContrastMode() const
 {
-    QSettings settings(R"(HKEY_CURRENT_USER\Control Panel\Accessibility\HighContrast)", QSettings::NativeFormat);
-    return (settings.value("Flags").toInt() & 1u) != 0;
+	QSettings settings(R"(HKEY_CURRENT_USER\Control Panel\Accessibility\HighContrast)", QSettings::NativeFormat);
+	return (settings.value("Flags").toInt() & 1u) != 0;
 }
 
-bool WinUtils::registerGlobalShortcut(const QString& name, Qt::Key key, Qt::KeyboardModifiers modifiers, QString* error)
+bool WinUtils::registerGlobalShortcut(const QString &name, Qt::Key key, Qt::KeyboardModifiers modifiers, QString *error)
 {
-    auto keycode = qtToNativeKeyCode(key);
-    auto modifierscode = qtToNativeModifiers(modifiers);
-    if (keycode < 1 || keycode > 254) {
-        if (error) {
-            *error = tr("Invalid key code");
-        }
-        return false;
-    }
+	auto keycode = qtToNativeKeyCode(key);
+	auto modifierscode = qtToNativeModifiers(modifiers);
+	if (keycode < 1 || keycode > 254)
+	{
+		if (error)
+		{
+			*error = tr("Invalid key code");
+		}
+		return false;
+	}
 
-    // Check if this key combo is registered to another shortcut
-    QHashIterator<QString, QSharedPointer<globalShortcut>> i(m_globalShortcuts);
-    while (i.hasNext()) {
-        i.next();
-        if (i.value()->nativeKeyCode == keycode && i.value()->nativeModifiers == modifierscode && i.key() != name) {
-            if (error) {
-                *error = tr("Global shortcut already registered to %1").arg(i.key());
-            }
-            return false;
-        }
-    }
+	// Check if this key combo is registered to another shortcut
+	QHashIterator<QString, QSharedPointer<globalShortcut>> i(m_globalShortcuts);
+	while (i.hasNext())
+	{
+		i.next();
+		if (i.value()->nativeKeyCode == keycode && i.value()->nativeModifiers == modifierscode && i.key() != name)
+		{
+			if (error)
+			{
+				*error = tr("Global shortcut already registered to %1").arg(i.key());
+			}
+			return false;
+		}
+	}
 
-    unregisterGlobalShortcut(name);
+	unregisterGlobalShortcut(name);
 
-    auto gs = QSharedPointer<globalShortcut>::create();
-    gs->id = m_nextShortcutId;
-    gs->nativeKeyCode = keycode;
-    gs->nativeModifiers = modifierscode;
-    if (!::RegisterHotKey(nullptr, gs->id, gs->nativeModifiers | MOD_NOREPEAT, gs->nativeKeyCode)) {
-        if (error) {
-            *error = tr("Could not register global shortcut");
-        }
-        return false;
-    }
+	auto gs = QSharedPointer<globalShortcut>::create();
+	gs->id = m_nextShortcutId;
+	gs->nativeKeyCode = keycode;
+	gs->nativeModifiers = modifierscode;
+	if (!::RegisterHotKey(nullptr, gs->id, gs->nativeModifiers | MOD_NOREPEAT, gs->nativeKeyCode))
+	{
+		if (error)
+		{
+			*error = tr("Could not register global shortcut");
+		}
+		return false;
+	}
 
-    m_globalShortcuts.insert(name, gs);
+	m_globalShortcuts.insert(name, gs);
 
-    if (++m_nextShortcutId > 0xBFFF) {
-        // Roll over if greater than the max id per
-        // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey#remarks
-        m_nextShortcutId = 1;
-    }
-    return true;
+	if (++m_nextShortcutId > 0xBFFF)
+	{
+		// Roll over if greater than the max id per
+		// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey#remarks
+		m_nextShortcutId = 1;
+	}
+	return true;
 }
 
-bool WinUtils::unregisterGlobalShortcut(const QString& name)
+bool WinUtils::unregisterGlobalShortcut(const QString &name)
 {
-    if (m_globalShortcuts.contains(name)) {
-        auto gs = m_globalShortcuts.value(name);
-        if (::UnregisterHotKey(nullptr, gs->id)) {
-            m_globalShortcuts.remove(name);
-            return true;
-        }
-    }
-    return false;
+	if (m_globalShortcuts.contains(name))
+	{
+		auto gs = m_globalShortcuts.value(name);
+		if (::UnregisterHotKey(nullptr, gs->id))
+		{
+			m_globalShortcuts.remove(name);
+			return true;
+		}
+	}
+	return false;
 }
 
 void WinUtils::triggerGlobalShortcut(int id)
 {
-    QHashIterator<QString, QSharedPointer<globalShortcut>> i(m_globalShortcuts);
-    while (i.hasNext()) {
-        i.next();
-        if (i.value()->id == id) {
-            emit globalShortcutTriggered(i.key());
-            break;
-        }
-    }
+	QHashIterator<QString, QSharedPointer<globalShortcut>> i(m_globalShortcuts);
+	while (i.hasNext())
+	{
+		i.next();
+		if (i.value()->id == id)
+		{
+			emit globalShortcutTriggered(i.key());
+			break;
+		}
+	}
 }
 
 // clang-format off
@@ -439,20 +455,24 @@ DWORD WinUtils::qtToNativeKeyCode(Qt::Key key)
 //
 DWORD WinUtils::qtToNativeModifiers(Qt::KeyboardModifiers modifiers)
 {
-    DWORD nativeModifiers = 0;
+	DWORD nativeModifiers = 0;
 
-    if (modifiers & Qt::ShiftModifier) {
-        nativeModifiers |= MOD_SHIFT;
-    }
-    if (modifiers & Qt::ControlModifier) {
-        nativeModifiers |= MOD_CONTROL;
-    }
-    if (modifiers & Qt::AltModifier) {
-        nativeModifiers |= MOD_ALT;
-    }
-    if (modifiers & Qt::MetaModifier) {
-        nativeModifiers |= MOD_WIN;
-    }
+	if (modifiers & Qt::ShiftModifier)
+	{
+		nativeModifiers |= MOD_SHIFT;
+	}
+	if (modifiers & Qt::ControlModifier)
+	{
+		nativeModifiers |= MOD_CONTROL;
+	}
+	if (modifiers & Qt::AltModifier)
+	{
+		nativeModifiers |= MOD_ALT;
+	}
+	if (modifiers & Qt::MetaModifier)
+	{
+		nativeModifiers |= MOD_WIN;
+	}
 
-    return nativeModifiers;
+	return nativeModifiers;
 }

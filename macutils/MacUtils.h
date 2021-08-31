@@ -1,26 +1,24 @@
-/*
- *  Copyright (C) 2012 Felix Geyer <debfx@fobos.de>
- *  Copyright (C) 2017 KeePassXC Team <team@keepassxc.org>
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 2 or (at your option)
- *  version 3 of the License.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+// Copyright (C) 2020 KeePassXC Team <team@keepassxc.org>
+// Copyright (C) 2021 Oleksandr Kolodkin <alexandr.kolodkin@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 or (at your option)
+// version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef KEEPASSXC_MACUTILS_H
 #define KEEPASSXC_MACUTILS_H
 
 #include "AppKit.h"
-#include "gui/osutils/OSUtilsBase.h"
+#include "OSUtilsBase.h"
 #include <Carbon/Carbon.h>
 
 #include <QColor>
@@ -30,72 +28,71 @@
 
 class MacUtils : public OSUtilsBase
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    static MacUtils* instance();
+	static MacUtils *instance();
 
-    bool isDarkMode() const override;
-    bool isStatusBarDark() const override;
-    bool isLaunchAtStartupEnabled() const override;
-    void setLaunchAtStartup(bool enable) override;
-    bool isCapslockEnabled() override;
+	bool isDarkMode() const override;
+	bool isStatusBarDark() const override;
+	bool isLaunchAtStartupEnabled() const override;
+	void setLaunchAtStartup(bool enable) override;
 
-    WId activeWindow();
-    bool raiseWindow(WId pid);
-    bool raiseLastActiveWindow();
-    bool raiseOwnWindow();
-    bool hideOwnWindow();
-    bool isHidden();
-    bool enableAccessibility();
-    bool enableScreenRecording();
-    void toggleForegroundApp(bool foreground);
+	WId activeWindow();
+	bool raiseWindow(WId pid);
+	bool raiseLastActiveWindow();
+	bool raiseOwnWindow();
+	bool hideOwnWindow();
+	bool isHidden();
+	bool enableAccessibility();
+	bool enableScreenRecording();
+	void toggleForegroundApp(bool foreground);
 
-    void registerNativeEventFilter() override;
+	void registerNativeEventFilter() override;
 
-    bool registerGlobalShortcut(const QString& name,
-                                Qt::Key key,
-                                Qt::KeyboardModifiers modifiers,
-                                QString* error = nullptr) override;
-    bool unregisterGlobalShortcut(const QString& name) override;
+	bool registerGlobalShortcut(const QString &name,
+								Qt::Key key,
+								Qt::KeyboardModifiers modifiers,
+								QString *error = nullptr) override;
+	bool unregisterGlobalShortcut(const QString &name) override;
 
-    uint16 qtToNativeKeyCode(Qt::Key key);
-    CGEventFlags qtToNativeModifiers(Qt::KeyboardModifiers modifiers, bool native);
+	uint16 qtToNativeKeyCode(Qt::Key key);
+	CGEventFlags qtToNativeModifiers(Qt::KeyboardModifiers modifiers, bool native);
 
-    bool canPreventScreenCapture() const override;
-    bool setPreventScreenCapture(QWindow* window, bool prevent) const override;
+	bool canPreventScreenCapture() const override;
+	bool setPreventScreenCapture(QWindow *window, bool prevent) const override;
 
 signals:
-    void lockDatabases();
+	void lockDatabases();
 
 protected:
-    explicit MacUtils(QObject* parent = nullptr);
-    ~MacUtils() override;
+	explicit MacUtils(QObject *parent = nullptr);
+	~MacUtils() override;
 
 private:
-    QString getLaunchAgentFilename() const;
-    static OSStatus hotkeyHandler(EventHandlerCallRef nextHandler, EventRef theEvent, void* userData);
+	QString getLaunchAgentFilename() const;
+	static OSStatus hotkeyHandler(EventHandlerCallRef nextHandler, EventRef theEvent, void *userData);
 
-    QScopedPointer<AppKit> m_appkit;
-    static QPointer<MacUtils> m_instance;
+	QScopedPointer<AppKit> m_appkit;
+	static QPointer<MacUtils> m_instance;
 
-    struct globalShortcut
-    {
-        EventHotKeyRef hotkeyRef;
-        EventHotKeyID hotkeyId;
-        uint16 nativeKeyCode;
-        CGEventFlags nativeModifiers;
-    };
+	struct globalShortcut
+	{
+		EventHotKeyRef hotkeyRef;
+		EventHotKeyID hotkeyId;
+		uint16 nativeKeyCode;
+		CGEventFlags nativeModifiers;
+	};
 
-    int m_nextShortcutId = 1;
-    QHash<QString, QSharedPointer<globalShortcut>> m_globalShortcuts;
+	int m_nextShortcutId = 1;
+	QHash<QString, QSharedPointer<globalShortcut>> m_globalShortcuts;
 
-    Q_DISABLE_COPY(MacUtils)
+	Q_DISABLE_COPY(MacUtils)
 };
 
-inline MacUtils* macUtils()
+inline MacUtils *macUtils()
 {
-    return MacUtils::instance();
+	return MacUtils::instance();
 }
 
 #endif // KEEPASSXC_MACUTILS_H
